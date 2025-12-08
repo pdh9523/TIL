@@ -194,4 +194,41 @@ class StockServiceTest {
         지금처럼 쓰기 작업이 빈번한 경우 낙관적 락은 재시도 오버헤드로 인해 성능상 약점이 존재한다.
          */
     }
+
+    @Test
+    public void 동시에_100개_요청_비관적_락() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+        for (int i=0; i<threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    stockService.decreaseWithPessimisticLock(1L, 1L);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        countDownLatch.await();
+
+        Stock stock = stockRepository.findById(1L).orElseThrow(RuntimeException::new);
+        assertEquals(0, stock.getQuantity());
+        /*
+         Expected: 100 - (1 *100) = 0
+         Actual: 0
+
+        - 해결
+        비관적 락을 통해 문제를 해결했다.
+
+        - 기본 정의
+        비관적 락: 충돌 상황을 가정하고, 일단 선점하면 다른 요청은 대기/차단하는 방식이다.
+        SELECT ~ FOR UPDATE 구문으로 구현되며, DB가 로우 단위로 락을 잡고 직렬화된 순서로 처리한다.
+
+        - 발생 문제
+        낙관적 락으로 인해 발생하는 재시도 문제를 해결할 수 있지만, 분산 데이터베이스 상황에서는 해당 락만을 적용하기 어렵다.
+
+        - 정리
+        DB락은 단일 DB에서만 적용할 수 있다.
+         */
+    }
 }
