@@ -42,5 +42,30 @@ class StockServiceTest {
         assertEquals(99, stock.getQuantity());
     }
 
+    @Test
+    public void 동시에_100개_요청() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
 
+        for (int i=0; i<threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    stockService.decrease(1L, 1L);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        countDownLatch.await();
+
+        Stock stock = stockRepository.findById(1L).orElseThrow(RuntimeException::new);
+        assertEquals(0, stock.getQuantity());
+        /*
+         Expected: 100 - (1 *100) = 0
+         Actual: 88 ~ 92
+
+         동시 조회로 인한 경쟁 상태, lost update 확인
+         */
+    }
 }
