@@ -108,4 +108,40 @@ class StockServiceTest {
         synchronized로 메서드 실행은 직렬화했지만, 트랜잭션 시작/종료 시점이 바깥에 있기 때문에 완벽히 제어할 수 없다.
          */
     }
+
+    @Test
+    public void 동시에_100개_요청_synchronized() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+
+        for (int i=0; i<threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    stockService.decreaseWithSynchronized(1L, 1L);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        countDownLatch.await();
+
+        Stock stock = stockRepository.findById(1L).orElseThrow(RuntimeException::new);
+        assertEquals(0, stock.getQuantity());
+        /*
+         Expected: 100 - (1 *100) = 0
+         Actual: 0
+
+        - 해결
+        위의 상황에서 문제는 커밋 시점이기에, 커밋 시점을 조절하면 문제가 사라진다.
+        단일 서버에서는 이를 @Transactional을 제거함으로써 해결할 수 있다.
+
+        - 발생 문제
+        실서비스에서 단일 인스턴스, 단일 서버를 유지하는 경우는 거의 없다.
+
+        - 정리
+        서비스/서버 레벨에서 정의하는 것 뿐만 아니라 DB 자체에서도 접근 제어가 필요하다.
+         */
+    }
+
 }

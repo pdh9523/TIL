@@ -31,4 +31,12 @@ public class StockService {
 
         stockRepository.save(stock);
     }
+
+    public synchronized void decreaseWithSynchronized(Long stockId, Long quantity) {
+        Stock stock = stockRepository.findById(stockId).orElseThrow(RuntimeException::new);
+
+        stock.decrease(quantity);
+
+        stockRepository.save(stock);
+    }
 }
