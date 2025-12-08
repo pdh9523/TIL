@@ -1,0 +1,25 @@
+package site.donghyeon.server.service;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import site.donghyeon.server.domain.Stock;
+import site.donghyeon.server.repository.StockRepository;
+
+@Service
+public class StockService {
+
+    private final StockRepository stockRepository;
+
+    public StockService(StockRepository stockRepository) {
+        this.stockRepository = stockRepository;
+    }
+
+    @Transactional
+    public void decrease(Long stockId, Long quantity) {
+        Stock stock = stockRepository.findById(stockId).orElseThrow(RuntimeException::new);
+
+        stock.decrease(quantity);
+
+        stockRepository.save(stock);
+    }
+}
