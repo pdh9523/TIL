@@ -6,8 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import site.donghyeon.server.domain.Stock;
+import site.donghyeon.server.facade.LettuceLockStockFacade;
 import site.donghyeon.server.facade.NamedLockStockFacade;
 import site.donghyeon.server.facade.OptimisticLockStockFacade;
+//import site.donghyeon.server.facade.RedissonLockStockFacade;
 import site.donghyeon.server.repository.StockRepository;
 
 import java.util.concurrent.CountDownLatch;
@@ -20,11 +22,17 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class StockServiceTest {
 
+//    @Autowired
+//    private RedissonLockStockFacade redissonLockStockFacade;
+
+    @Autowired
+    private LettuceLockStockFacade lettuceLockStockFacade;
+
     @Autowired
     private NamedLockStockFacade namedLockStockFacade;
 
     @Autowired
-    private OptimisticLockStockFacade  optimisticLockStockFacade;
+    private OptimisticLockStockFacade optimisticLockStockFacade;
 
     @Autowired
     private StockService stockService;
@@ -327,4 +335,83 @@ class StockServiceTest {
 
          */
     }
+
+    @Test
+    public void 동시에_100개_요청_Lettuce() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+        for (int i=0; i<threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    lettuceLockStockFacade.decrease(1L, 1L);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        countDownLatch.await();
+
+        Stock stock = stockRepository.findById(1L).orElseThrow(RuntimeException::new);
+        assertEquals(0, stock.getQuantity());
+        /*
+         Expected: 100 - (1 *100) = 0
+         Actual: 0
+
+        - 해결
+        Lettuce를 활용해, 분산 락을 구현해 해결했다.
+
+        - 기본 정의
+        분산 락: 여러 프로세스 / 여러 서버 인스턴스가 같은 공유 자원을 동시에 수정하지 않도록
+        외부 공용 저장소 (여기서는 Redis)에 "락 정보"를 저장해 동시성을 제어한다.
+
+        - 발생 문제
+        분산 락은 네트워크 왕복 + Redis I/O가 항상 수반되므로 단일 DB 락이나 JVM 내 락보다 오버헤드가 크다.
+        그리고 단순 구현 형태에서는 지금과 같이 스핀 락 형태(락이 잡힐 때까지 계속 재시도)가 되기 쉬운데,
+        이 경우 충돌이 많은 구간에서 Redis 에 지속적으로 요청을 보내 Redis 서버에 부하를 줄 수 있다.
+
+        - 정리
+        여러 인스턴스와 여러 프로세스에 걸친 동시성을 제어해야할 때 유용하다.
+        하지만, 오버헤드 비용이 크게 차이나기에 다중 인스턴스 및 서비스 간 조율이 꼭 필요한 경우에서만 신중하게 도입할 필요가 있다.
+         */
+    }
+
+//    @Test
+//    public void 동시에_100개_요청_Redisson() throws InterruptedException {
+//        int threadCount = 100;
+//        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+//        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+//        for (int i=0; i<threadCount; i++) {
+//            executorService.submit(() -> {
+//                try {
+//                    redissonLockStockFacade.decrease(1L, 1L);
+//                } catch (Exception e) {
+//                    throw new RuntimeException(e);
+//                } finally {
+//                    countDownLatch.countDown();
+//                }
+//            });
+//        }
+//        countDownLatch.await();
+//
+//        Stock stock = stockRepository.findById(1L).orElseThrow(RuntimeException::new);
+//        assertEquals(0, stock.getQuantity());
+//        /*
+//
+//        - 해결
+//        Redisson pub/sub 을 활용해 락 구현을 구성했다.
+//
+//        - 기본 정의
+//        분산 락:
+//
+//        - 발생 문제
+//          2025.12.08 기준 테스트를 spring boot 4.0.0 버전에서 진행하고 있는데,
+//          redisson-spring-boot-starter:3.52.0 가 최신버전이고, 이는 아직 spring boot 4.0.0과 호환되지 않는다.
+//
+//        - 정리
+//          검증 보류
+//         */
+//    }
 }
