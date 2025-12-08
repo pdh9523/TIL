@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import site.donghyeon.server.domain.Stock;
+import site.donghyeon.server.facade.NamedLockStockFacade;
 import site.donghyeon.server.facade.OptimisticLockStockFacade;
 import site.donghyeon.server.repository.StockRepository;
 
@@ -18,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class StockServiceTest {
+
+    @Autowired
+    private NamedLockStockFacade namedLockStockFacade;
 
     @Autowired
     private OptimisticLockStockFacade  optimisticLockStockFacade;
@@ -229,6 +233,98 @@ class StockServiceTest {
 
         - 정리
         DB락은 단일 DB에서만 적용할 수 있다.
+         */
+    }
+
+    @Test
+    public void 동시에_100개_요청_트랜잭션_락() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+        for (int i=0; i<threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    namedLockStockFacade.decreaseWithTransactionLock(1L, 1L);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        countDownLatch.await();
+
+        Stock stock = stockRepository.findById(1L).orElseThrow(RuntimeException::new);
+        assertEquals(0, stock.getQuantity());
+        /*
+         Expected: 100 - (1 *100) = 0
+         Actual: 0
+
+        - 해결
+        네임드 락 중, 트랜잭션 락 형태로 해결했다.
+
+        - 기본 정의
+        트랜잭션 락: 네임드 락의 한 형태로, 임의의 키를 기준으로 트랜잭션 간 동시성을 제어한다.
+        postgres 기준으로는 pg_advisory_lock을 호출 시, 현재 트랜잭션이 해당 키에 대한 락을 획득하고,
+        트랜잭션이 커밋/롤백될 때 락이 해제된다.
+
+        - 발생 문제
+        동일 키에 대한 요청이 많을 경우, 후행 트랜잭션이 모두 락 획득 지점에서 대기해서 락 경합이 커질 수 있다.
+        하나의 트랜잭션에서 여러 키에 대해 트랜잭션 락을 획득하는 경우, 락 획득 순서 차이에 의해 데드락이 발생할 수 있다.
+        여전히 분산 환경에서는 일관성을 보장하지 않는다.
+
+        - 정리
+        트랜잭션과 락 생명주기가 맞아 떨어지기에 단순하고 직관적이다.
+         */
+    }
+
+    @Test
+    public void 동시에_100개_요청_세션_락() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+        for (int i=0; i<threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    namedLockStockFacade.decreaseWithSessionLock(1L, 1L);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        countDownLatch.await();
+
+        Stock stock = stockRepository.findById(1L).orElseThrow(RuntimeException::new);
+        assertEquals(0, stock.getQuantity());
+        /*
+         Expected: 100 - (1 *100) = 0
+         Actual: 0
+
+        - 해결
+        네임드 락 중, 세션 락 형태로 해결했다.
+
+        - 기본 정의
+        세션 락: 네임드 락 중, 세션(커넥션) 스코프에서 작동하는 락이다.
+        postgres 기준으로 pg_advisory_lock을 호출 시, 현재 세션이 해당 키에 대한 락을 획득하고,
+        동일 세션에서 pg_advisory_unlock을 호출하거나, 커넥션이 끊어질 때까지 유지된다.
+
+        - 발생 문제
+        세션 락 트러블 슈팅:
+
+        @Transactional
+        public void decrease(Long id, Long quantity) {
+            lockRepository.getLock("stock: "+id);
+            stockService.decreaseWithNamedLock(id, quantity);
+            lockRepository.releaseLock("stock: "+id);
+        }
+
+        여기서 pg_advisory_lock - pg_advisory_unlock을 통해 네임드락을 구현하려고 했으나 실패했다.
+        지금 트랜잭션 순서는 "락 획득 -> ( read - modify - write ) -> 락 해제 -> 트랜잭션 커밋" 이다.
+        여기서 세션 락은 커밋과 무관하게 먼저 풀리기 때문에, 커밋되기 전에 다른 트랜잭션이 이전 스냅샷을 기준으로 갱신할 수 있다.
+        따라서, 세션 락을 사용할 때는 비즈니스 로직이 커밋된 이후에 락이 해제되도록 강제(afterCommit)해야 한다.
+
+        - 정리
+        세션 락은 트랜잭션과 독립적인, 더 넓은 범위의 네임드 락을 제공하지만 @Transactional과 함께 사용할 때는 정합성 문제가 발생할 수 있다.
+        그리고, 실무에서는 위의 트랜잭션 락(pg_advisory_xact_lock)을 사용해 구현하는 것이 더 단순하고 직관적이다.
+
          */
     }
 }
