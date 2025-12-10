@@ -5,6 +5,7 @@ import "errors"
 type Stock struct {
 	ID       int64 `gorm:"primaryKey:size:36"`
 	Quantity int64 `gorm:"not null"`
+	Version  int64 `gorm:"not null;default:0;version"`
 }
 
 // NewStock 은 Stock 의 생성자 입니다.

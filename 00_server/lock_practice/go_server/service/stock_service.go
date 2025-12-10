@@ -4,6 +4,7 @@ import (
 	"go_server/repository"
 	"gorm.io/gorm"
 	"sync"
+	"time"
 )
 
 type StockService struct {
@@ -64,6 +65,29 @@ func (s *StockService) DecreaseWithMutexLock(id, quantity int64) error {
 	defer lock.Unlock()
 
 	return s.Decrease(id, quantity)
+}
+
+// DecreaseWithOptimisticLock 은 낙관적 락을 활용해 Decrease 과정에서의 경쟁 상태를 해소 합니다.
+func (s *StockService) DecreaseWithOptimisticLock(id, quantity int64) error {
+	for {
+		if err := s.repository.Transaction(func(db *gorm.DB) error {
+			stock, err := s.repository.FindByIDTx(db, id)
+			if err != nil {
+				return err
+			}
+			if err := stock.Decrease(quantity); err != nil {
+				return err
+			}
+
+			if err := s.repository.SaveWithOptimisticLockTx(db, stock); err != nil {
+				return err
+			}
+			return nil
+		}); err == nil {
+			return nil
+		}
+		time.Sleep(time.Millisecond * 50)
+	}
 }
 
 // lockForID 는 특정 PK 값을 기준으로 락을 생성하고 해제하는 메서드 입니다.

@@ -1,10 +1,13 @@
 package repository
 
 import (
+	"errors"
 	"go_server/domain"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+var ErrOptimisticLock = errors.New("낙관적 락 충돌 발생")
 
 type StockRepository struct {
 	db *gorm.DB
@@ -52,6 +55,22 @@ func (r *StockRepository) FindByID(id int64) (*domain.Stock, error) {
 // SaveTx 는 새로운, 또는 수정된 Stock 을 DB에 저장합니다.
 func (r *StockRepository) SaveTx(tx *gorm.DB, stock *domain.Stock) error {
 	return tx.Save(stock).Error
+}
+
+// SaveWithOptimisticLockTx 는 SaveTx 메서드에 낙관적 락을 적용한 메서드 입니다.
+func (r *StockRepository) SaveWithOptimisticLockTx(tx *gorm.DB, stock *domain.Stock) error {
+	res := tx.Model(stock).Where("version = ?", stock.Version).Updates(map[string]any{
+		"quantity": stock.Quantity,
+		"version":  gorm.Expr("version + ?", 1),
+	})
+
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return ErrOptimisticLock
+	}
+	return nil
 }
 
 // Save 는 SaveTx 에서 트랜잭션을 고려하지 않은 메서드입니다.
