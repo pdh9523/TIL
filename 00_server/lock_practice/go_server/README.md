@@ -2,7 +2,7 @@
 
 ## 트러블 슈팅
 
-- `트랜잭션 관련 메서드 수정` 커밋 이전에 테스트 구성 중 데드락 에러 발생
+- [트랜잭션 관련 메서드 수정](https://github.com/pdh9523/TIL/commit/3c69b5a968698aeac3396d79fa1d585240f799cb) 커밋 이전에 테스트 구성 중 데드락 에러 발생
 
 원인을 해당 코드에서 발견
 ```go
@@ -24,7 +24,7 @@ func (s *StockService) Decrease(id, quantity int64) error {
 ```
 해당 코드는 `GORM` 이 트랜잭션을 위해 넘겨준 db를 사용하지 않고, 100개의 고루틴이 한 번에 `r.db` 를 통해 같은 row 에 진입하는 상황이 만들어짐
 
-DB 레벨에서 락 경합이 심해져 문제가 발생했을 것이라 판단했고, `repository` 구조를 해당 커밋을 통해
+DB 레벨에서 락 경합이 심해져 문제가 발생했을 것이라 판단했고, `repository` 구조를 [트랜잭션 관련 메서드 수정](https://github.com/pdh9523/TIL/commit/3c69b5a968698aeac3396d79fa1d585240f799cb) 커밋을 통해
 
 ```go
 // FindByIDTx 는 DB에서 특정 id를 PK로 가진 Stock 을 가져오고, 없는 경우 nil과 에러를 반환합니다.
