@@ -3,6 +3,7 @@ package repository
 import (
 	"go_server/domain"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type StockRepository struct {
@@ -26,6 +27,18 @@ func (r *StockRepository) Transaction(fn func(tx *gorm.DB) error) error {
 func (r *StockRepository) FindByIDTx(tx *gorm.DB, id int64) (*domain.Stock, error) {
 	var stock domain.Stock
 	if err := tx.Where("id = ?", id).First(&stock).Error; err != nil {
+		return nil, err
+	}
+	return &stock, nil
+}
+
+// FindByIDWithPessimisticLockTx 는 findByIdTx 에서 비관적 락을 적용한 메서드 입니다.
+func (r *StockRepository) FindByIDWithPessimisticLockTx(tx *gorm.DB, id int64) (*domain.Stock, error) {
+	var stock domain.Stock
+	if err := tx.
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("id = ?", id).
+		First(&stock).Error; err != nil {
 		return nil, err
 	}
 	return &stock, nil

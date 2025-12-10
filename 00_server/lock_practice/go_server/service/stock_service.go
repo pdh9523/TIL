@@ -39,6 +39,24 @@ func (s *StockService) Decrease(id, quantity int64) error {
 	})
 }
 
+// DecreaseWithPessimisticLock 은 Decrease 에 비관적 락을 적용한 경우입니다.
+func (s *StockService) DecreaseWithPessimisticLock(id, quantity int64) error {
+	return s.repository.Transaction(func(db *gorm.DB) error {
+		stock, err := s.repository.FindByIDWithPessimisticLockTx(db, id)
+		if err != nil {
+			return err
+		}
+		if err := stock.Decrease(quantity); err != nil {
+			return err
+		}
+
+		if err := s.repository.SaveTx(db, stock); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 // DecreaseWithMutexLock 은 뮤텍스 락을 활용해 Decrease 과정에서의 경쟁 상태를 해소 합니다.
 func (s *StockService) DecreaseWithMutexLock(id, quantity int64) error {
 	lock := s.lockForID(id)
