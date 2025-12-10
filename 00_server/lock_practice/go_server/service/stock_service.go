@@ -18,7 +18,7 @@ func NewStockService(stockRepository *repository.StockRepository) *StockService 
 
 func (s *StockService) Decrease(id, quantity int64) error {
 	return s.repository.Transaction(func(db *gorm.DB) error {
-		stock, err := s.repository.FindByID(id)
+		stock, err := s.repository.FindByIDTx(db, id)
 		if err != nil {
 			return err
 		}
@@ -26,7 +26,7 @@ func (s *StockService) Decrease(id, quantity int64) error {
 			return err
 		}
 
-		if err := s.repository.Save(stock); err != nil {
+		if err := s.repository.SaveTx(db, stock); err != nil {
 			return err
 		}
 		return nil
