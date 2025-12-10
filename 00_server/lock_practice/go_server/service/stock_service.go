@@ -9,14 +9,19 @@ import (
 
 type StockService struct {
 	repository *repository.StockRepository
+	lock       *repository.LockRepository
 	mutexes    map[int64]*sync.Mutex
 	mutex      sync.Mutex
 }
 
 // NewStockService 는 StockService의 생성자 입니다.
-func NewStockService(stockRepository *repository.StockRepository) *StockService {
+func NewStockService(
+	stockRepository *repository.StockRepository,
+	lockRepository *repository.LockRepository,
+) *StockService {
 	return &StockService{
 		repository: stockRepository,
+		lock:       lockRepository,
 		mutexes:    make(map[int64]*sync.Mutex),
 	}
 }
@@ -88,6 +93,24 @@ func (s *StockService) DecreaseWithOptimisticLock(id, quantity int64) error {
 		}
 		time.Sleep(time.Millisecond * 50)
 	}
+}
+
+// DecreaseWithOptimisticLock 은 postgres의 트랜잭션 락(advisory_xact_lock)을 활용해 Decrease 과정에서의 경쟁 상태를 해소 합니다.
+func (s *StockService) DecreaseWithTransactionLock(id, quantity int64) error {
+	return s.lock.WithTxLock(id, func(db *gorm.DB) error {
+		stock, err := s.repository.FindByIDTx(db, id)
+		if err != nil {
+			return err
+		}
+		if err := stock.Decrease(quantity); err != nil {
+			return err
+		}
+
+		if err := s.repository.SaveTx(db, stock); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // lockForID 는 특정 PK 값을 기준으로 락을 생성하고 해제하는 메서드 입니다.
