@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>_Templates on My New Hugo Site</title>
+    <link>http://localhost:1313/_templates/</link>
+    <description>Recent content in _Templates on My New Hugo Site</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:1313/_templates/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title></title>
+      <link>http://localhost:1313/_templates/global/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/_templates/global/</guid>
+      <description>&lt;p&gt;&amp;lt;%*&#xA;let title = tp.file.title;&lt;/p&gt;&#xA;&lt;p&gt;if (title.startsWith(&amp;ldquo;Untitled&amp;rdquo;)) {&#xA;title = await tp.system.prompt(&amp;ldquo;제목을 입력해주세요&amp;rdquo;);&lt;/p&gt;&#xA;&lt;pre&gt;&lt;code&gt;if (!title || title.trim() === &amp;quot;&amp;quot;) {&#xA;  const file = tp.file.find_tfile(tp.file.path(true));&#xA;  await app.vault.trash(file, false);&#xA;  return;&#xA;}&#xA;&#xA;await tp.file.rename(title);&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;p&gt;}&lt;/p&gt;&#xA;&lt;p&gt;const slug = title&#xA;.toLowerCase()&#xA;.replace(/\s+/g, &amp;lsquo;-&amp;rsquo;)&#xA;.replace(/[^a-z0-9-]/g, &amp;lsquo;&amp;rsquo;);&lt;/p&gt;&#xA;&lt;p&gt;const nowISO  = tp.date.now(&amp;ldquo;YYYY-MM-DDTHH:mm:ssZ&amp;rdquo;);&#xA;const created = tp.date.now(&amp;ldquo;YYYY-MM-DD&amp;rdquo;);&#xA;const updated = tp.file.last_modified_date(&amp;ldquo;YYYY-MM-DD&amp;rdquo;);&lt;/p&gt;&#xA;&lt;h2 id=&#34;bookhidden-false&#34;&gt;tR += `&amp;mdash;&#xA;title: &amp;ldquo;${title}&amp;rdquo;&#xA;date: ${nowISO}&#xA;draft: true&#xA;slug: &amp;ldquo;${slug}&amp;rdquo;&#xA;tags: []&#xA;categories: []&#xA;summary: &amp;quot;&amp;quot;&#xA;weight: 1&#xA;bookHidden: false&lt;a class=&#34;anchor&#34; href=&#34;#bookhidden-false&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;h1 id=&#34;title&#34;&gt;&lt;strong&gt;${title}&lt;/strong&gt;&lt;a class=&#34;anchor&#34; href=&#34;#title&#34;&gt;#&lt;/a&gt;&lt;/h1&gt;&#xA;&lt;p&gt;`;&#xA;%&amp;gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
