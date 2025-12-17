@@ -35,9 +35,9 @@ def run_pair(label: str, query_path: str, ping_path: str):
     return result
 
 def test_query():
-    scan_result = run_pair("scan", "/scan", "/ping")
+    scan_result = run_pair("scan", "/query/scan", "/ping")
     time.sleep(0.5)
-    keys_result = run_pair("keys", "/keys", "/ping")
+    keys_result = run_pair("keys", "/query/keys", "/ping")
 
     # 기대: KEYS가 쿼리는 더 빠르고, ping은 더 느리다.
     assert scan_result["scan-query"] >= keys_result["keys-query"]

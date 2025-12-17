@@ -4,7 +4,7 @@ import uvicorn
 import redis
 import time
 
-from lib.decorators import measure_time
+from utils.decorators import measure_time
 from infra.redis_client import get_redis
 from keys_vs_scan import QueryRouter
 
