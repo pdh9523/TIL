@@ -18,6 +18,24 @@ def redis_ping(r :redis.Redis = Depends(get_redis)):
     r.ping()
     return {"status": "ok", "timestamp": time.time()}
 
+@app.delete("/clear")
+@measure_time
+def redis_clear(r: redis.Redis = Depends(get_redis), pattern: str = "test:*"):
+    deleted = 0
+    batch_size = 1000
+    pipe = r.pipeline()
+
+    for key in r.scan_iter(match=pattern, count=batch_size):
+        pipe.unlink(key)
+        deleted += 1
+        if deleted % batch_size == 0:
+            pipe.execute()
+
+    if deleted % batch_size:
+        pipe.execute()
+
+    return {"status": "no content", "deleted": deleted, "pattern": pattern}
+
 if __name__ == "__main__":
     uvicorn.run(
         "app:app",
