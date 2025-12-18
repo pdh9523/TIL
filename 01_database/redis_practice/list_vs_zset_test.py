@@ -1,7 +1,7 @@
 import time
 import random
 import string
-from typing import List, Any
+from typing import List, Any, Tuple
 
 import requests
 
@@ -11,7 +11,7 @@ TIMEOUT = 600
 def get_random_users(size: int) -> List[str]:
     return [f"user_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}" for _ in range(size)]
 
-def call(name: str, method: str, path: str, body: Any | None = None, debug=True):
+def call(name: str, method: str, path: str, body: Any | None = None, debug=True) -> float:
     t0 = time.perf_counter()
 
     if method == "get":
@@ -24,42 +24,35 @@ def call(name: str, method: str, path: str, body: Any | None = None, debug=True)
     dt = time.perf_counter() - t0
     if debug:
         print(f"{name}: {resp.status_code}, {dt:.3f}s, body={resp.json()}")
-    return name, dt
+    return dt
 
-if __name__ == "__main__":
+def test_queue(struct_type: str) -> Tuple[int, int]:
     print("=== 데이터 정리 중 ===") 
     call("clear test data", "delete", "/clear", debug=False)
     print("=== 데이터 정리 완료 ===") 
 
     print("=== 테스트 데이터 생성 중 ===") 
-    call("create_first_user", "post", "/queue/list/enqueue", ["user_first"], debug=False)
-    call("create_first_user", "post", "/queue/zset/enqueue", ["user_first"], debug=False)
+    call("create_first_user", "post", f"/queue/{struct_type}/enqueue", ["user_first"], debug=False)
     for i in range(100):
-        call("create_random_users", "post", "/queue/list/enqueue", get_random_users(size=100000), debug=False)
+        call("create_random_users", "post", f"/queue/{struct_type}/enqueue", get_random_users(size=100000), debug=False)
         if (i+1) % 10 == 0:
-            print(f"=== LIST 테스트 데이터 생성 중 === {i+1}/100")
-    for i in range(100):
-        call("create_ramdon_users", "post", "/queue/zset/enqueue", get_random_users(size=100000), debug=False)
-        if (i+1) % 10 == 0:
-            print(f"=== ZSET 테스트 데이터 생성 중 === {i+1}/100")
-    
-    call("create_last_uesr", "post", "/queue/list/enqueue", ["user_last"], debug=False)
-    call("create_last_uesr", "post", "/queue/zset/enqueue", ["user_last"], debug=False)
+            print(f"=== {struct_type} 테스트 데이터 생성 중 === {i+1}/100")
+    call("create_last_uesr", "post", f"/queue/{struct_type}/enqueue", ["user_last"], debug=False)
     print("=== 테스트 데이터 생성 완료 ===")
 
-    print("=== LIST 테스트 ===")
-    call("get_bottom100", "get", "/queue/list/bottom100", debug=True)
-    call("get_top100", "get", "/queue/list/top100", debug=True)
-    _, list_first_user_time = call("get_first_user", "get", "/queue/list/position?user_id=user_first", debug=True)
-    _, list_last_user_time = call("get_last_user", "get", "/queue/list/position?user_id=user_last", debug=True)
+    call("get_top100", "get", f"/queue/{struct_type}/top100", debug=True)
+    call("get_bottom100", "get", f"/queue/{struct_type}/bottom100", debug=True)
 
-    print("=== ZSET 테스트 ===")
-    call("get_bottom100", "get", "/queue/zset/bottom100", debug=True)
-    call("get_top100", "get", "/queue/zset/top100", debug=True)
-    _, zset_first_user_time = call("get_first_user", "get", "/queue/zset/position?user_id=user_first", debug=True)
-    _, zset_last_user_time = call("get_last_user", "get", "/queue/zset/position?user_id=user_last", debug=True)
+    first_user_time = call("get_first_user", "get", f"/queue/{struct_type}/position?user_id=user_first", debug=True)
+    last_user_time = call("get_last_user", "get", f"/queue/{struct_type}/position?user_id=user_last", debug=True)
 
-    # 리스트: 앞쪽 조회가 뒤쪽 조회보다 빠르다.
+    return first_user_time, last_user_time
+
+if __name__ == "__main__":
+    list_first_user_time, list_last_user_time = test_queue("list")
+    zset_first_user_time, zset_last_user_time = test_queue("zset")
+
+    # LIST: 앞쪽 조회가 뒤쪽 조회보다 빠르다.
     assert list_first_user_time < list_last_user_time
     # ZSET: 뒤쪽 조회도 리스트보다 빠르거나 비슷해야 한다.
     assert zset_last_user_time <= list_last_user_time
