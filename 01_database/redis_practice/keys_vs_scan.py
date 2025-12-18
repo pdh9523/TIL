@@ -8,14 +8,13 @@ from infra.redis_client import get_redis
 
 QueryRouter = APIRouter(prefix="/query")
 
-
 @QueryRouter.post("/add")
 @measure_time
 def bulk_add_data(r: redis.Redis = Depends(get_redis)):
     pipe = r.pipeline()
     now = time.time()
     for i in range(1000000):
-        key = f"test:{now}:{i}"
+        key = f"test:keys_scan:{now}:{i}"
         pipe.set(key, 0)
     pipe.execute()
     return {"status": "created"}
@@ -23,7 +22,7 @@ def bulk_add_data(r: redis.Redis = Depends(get_redis)):
 @QueryRouter.get("/keys")
 @measure_time
 def get_all_data_with_keys(r: redis.Redis = Depends(get_redis)):
-    data = r.keys("test:*")
+    data = r.keys("test:keys_scan:*")
     return {
         "status": "ok",
         "length": len(data),
@@ -35,7 +34,7 @@ def get_all_data_with_scan(r: redis.Redis = Depends(get_redis)):
     cursor = 0
     data = []
     while True:
-        cursor, batch = r.scan(cursor=cursor, match="test:*", count=10000)
+        cursor, batch = r.scan(cursor=cursor, match="test:keys_scan:*", count=10000)
         data.extend(batch)
         if cursor == 0: break
     return {
