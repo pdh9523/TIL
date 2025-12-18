@@ -7,10 +7,12 @@ import time
 from utils.decorators import measure_time
 from infra.redis_client import get_redis
 from keys_vs_scan import QueryRouter
+from list_vs_zset import QueueRouter
 
 app = FastAPI()
 
 app.include_router(QueryRouter)
+app.include_router(QueueRouter)
 
 @app.get("/ping")
 @measure_time
