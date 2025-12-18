@@ -1,5 +1,4 @@
 import time
-import threading
 import random
 import string
 from typing import List, Any
@@ -34,30 +33,53 @@ if __name__ == "__main__":
 
     print("=== 테스트 데이터 생성 중 ===") 
     call("create_first_user", "post", "/queue/list/enqueue", ["user_first"], debug=False)
+    call("create_first_user", "post", "/queue/zset/enqueue", ["user_first"], debug=False)
     for i in range(100):
         call("create_random_users", "post", "/queue/list/enqueue", get_random_users(size=100000), debug=False)
         if (i+1) % 10 == 0:
-            print(f"=== 테스트 데이터 생성 중 === {i+1}/100") 
+            print(f"=== LIST 테스트 데이터 생성 중 === {i+1}/100")
+    for i in range(100):
+        call("create_ramdon_users", "post", "/queue/zset/enqueue", get_random_users(size=100000), debug=False)
+        if (i+1) % 10 == 0:
+            print(f"=== ZSET 테스트 데이터 생성 중 === {i+1}/100")
+    
     call("create_last_uesr", "post", "/queue/list/enqueue", ["user_last"], debug=False)
+    call("create_last_uesr", "post", "/queue/zset/enqueue", ["user_last"], debug=False)
     print("=== 테스트 데이터 생성 완료 ===")
 
+    print("=== LIST 테스트 ===")
     call("get_bottom100", "get", "/queue/list/bottom100", debug=True)
     call("get_top100", "get", "/queue/list/top100", debug=True)
-    _, first_user_time = call("get_first_user", "get", "/queue/list/position?user_id=user_first", debug=True)
-    _, last_user_time = call("get_last_user", "get", "/queue/list/position?user_id=user_last", debug=True)
+    _, list_first_user_time = call("get_first_user", "get", "/queue/list/position?user_id=user_first", debug=True)
+    _, list_last_user_time = call("get_last_user", "get", "/queue/list/position?user_id=user_last", debug=True)
 
-    # 예상: 리스트 앞의 유저를 가지고 오는 시간이 리스트 뒤의 유저를 가지고 오는 시간보다 빠를 것이다.
-    assert first_user_time < last_user_time
+    print("=== ZSET 테스트 ===")
+    call("get_bottom100", "get", "/queue/zset/bottom100", debug=True)
+    call("get_top100", "get", "/queue/zset/top100", debug=True)
+    _, zset_first_user_time = call("get_first_user", "get", "/queue/zset/position?user_id=user_first", debug=True)
+    _, zset_last_user_time = call("get_last_user", "get", "/queue/zset/position?user_id=user_last", debug=True)
+
+    # 리스트: 앞쪽 조회가 뒤쪽 조회보다 빠르다.
+    assert list_first_user_time < list_last_user_time
+    # ZSET: 뒤쪽 조회도 리스트보다 빠르거나 비슷해야 한다.
+    assert zset_last_user_time <= list_last_user_time
 
 '''
-get_bottom100: 200, 0.001s, body={'status': 'ok', 'total': 10000002, 'count': 100}
-get_top100: 200, 0.002s, body={'status': 'ok', 'total': 10000002, 'count': 100}
+=== LIST 테스트 ===
+get_bottom100: 200, 0.002s, body={'status': 'ok', 'total': 10000002, 'count': 100}
+get_top100: 200, 0.001s, body={'status': 'ok', 'total': 10000002, 'count': 100}
+get_first_user: 200, 0.001s, body={'status': 'ok', 'type': 'list', 'total': 10000002, 'position': 1}
+get_last_user: 200, 0.113s, body={'status': 'ok', 'type': 'list', 'total': 10000002, 'position': 10000002}
 
-get_first_user: 200, 0.001s, body={'status': 'ok', 'type': 'list', 'total': 10000002, 'position': 0}
-get_last_user: 200, 0.111s, body={'status': 'ok', 'type': 'list', 'total': 10000002, 'position': 10000001}
+=== ZSET 테스트 ===
+get_bottom100: 200, 0.003s, body={'status': 'ok', 'total': 9999984, 'count': 100}
+get_top100: 200, 0.002s, body={'status': 'ok', 'total': 9999984, 'count': 100}
+get_first_user: 200, 0.002s, body={'status': 'ok', 'type': 'zset', 'total': 9999984, 'position': 1}
+get_last_user: 200, 0.001s, body={'status': 'ok', 'type': 'zset', 'total': 9999984, 'position': 9999984}
 
-1000만개의 테스트 세팅에서 시작했다.
+각각 1000만개의 테스트 세팅에서 시작했다. (랜덤으로 1000만개를 만들었는데, 20개 정도는 중복된 조합이 나온 것 같다.)
 
+LIST의 경우, 
 - lrange를 통한 상위 100명, 하위 100명을 선택하는 것은 성능 차이가 거의 없었으나,
 - 첫번째 유저를 가지고 오는 것과 마지막 유저를 가지고 오는 것은 큰 차이를 보였다.
 
@@ -66,4 +88,10 @@ Redis LIST는 내부적으로 quicklist(양방향 linked list + packed array)라
 
 `LRANGE`는 시작점이 tail에 가까우면 tail부터 바로 100개만 직렬화해서 끝에 있는 요소를 찾더라도 시간이 오래 걸리지 않고,  
 `LPOS` 기본은 앞에서부터 비교하므로 끝 요소를 찾을 때 전체를 훑어 시간이 더 든다.
+
+반면 ZSET의 경우, 
+- zrange, zrevrange 는 list와 동일하게 성능 차이가 없었고,
+- 첫번째 유저와 마지막 유저를 가지고 오는 것 또한 차이가 없었다. 
+
+ZSET은 score/순위가 인덱스 트리+skiplist로 관리돼 앞/뒤 조회 비용 차이가 거의 없다. 랭킹 조회가 많은 대기열이면 ZSET이 일관된 응답시간을 주기 쉽다.
 '''

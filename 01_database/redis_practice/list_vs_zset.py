@@ -1,3 +1,4 @@
+import time
 import random
 import string
 from typing import List
@@ -75,10 +76,62 @@ def list_bottom100(r: redis.Redis = Depends(get_redis)):
         "count": len(users),
     }
 
+'''
+=== ZSET ===
+'''
+
 @ZSetRouter.get("/position")
 @measure_time
 def zset_position(user_id: str, r: redis.Redis = Depends(get_redis)):
-    return
+    total = r.zcard(ZSET_KEY)
+    pos = r.zrank(ZSET_KEY, user_id) + 1
+    return {
+        "status": "ok",
+        "type": "zset",
+        "total": total,
+        "position": pos
+    }
+
+@ZSetRouter.post("/enqueue")
+@measure_time
+def zset_enqueue(
+    ids: List[str] = Body(..., embed=False, description='JSON 배열로 보낼 것. 예: ["u1","u2"]'),
+    r: redis.Redis = Depends(get_redis),
+):
+    if not ids:
+        raise HTTPException(status_code=400, detail="ids list is empty")
+
+    pipe = r.pipeline()
+    for user_id in ids:
+        pipe.zadd(ZSET_KEY, {user_id: time.time()})
+    pipe.execute()
+
+    return {
+        "status": "created", 
+        "type": "list", 
+        "enqueued": len(ids)
+    }
+
+@ZSetRouter.get("/top100")
+def zset_top100(r: redis.Redis = Depends(get_redis)):
+    total = r.zcard(ZSET_KEY)
+    users = r.zrange(ZSET_KEY, 0, 100-1)
+    return {
+        "status": "ok",
+        "total": total,
+        "count": len(users),
+    }
+
+@ZSetRouter.get("/bottom100")
+def zset_bottom100(r: redis.Redis = Depends(get_redis)):
+    total = r.zcard(ZSET_KEY)
+    users = r.zrevrange(ZSET_KEY, 0, 100-1)
+    return {
+        "status": "ok",
+        "total": total,
+        "count": len(users),
+    }
+
 
 QueueRouter.include_router(ListRouter)
 QueueRouter.include_router(ZSetRouter)
