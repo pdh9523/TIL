@@ -1,11 +1,14 @@
-from fastapi import FastAPI, Depends
-import uvicorn
+import time
 
 import redis
-import time
+import uvicorn
+
+from fastapi import FastAPI, Depends
+from redis.cluster import RedisCluster
 
 from utils.decorators import measure_time
 from infra.redis_client import get_redis
+from infra.redis_cluster import get_redis_cluster
 from keys_vs_scan import QueryRouter
 from list_vs_zset import QueueRouter
 from string_vs_hset import TimeScaleRouter
@@ -16,10 +19,16 @@ app.include_router(QueryRouter)
 app.include_router(QueueRouter)
 app.include_router(TimeScaleRouter)
 
-@app.get("/ping")
+@app.get("/redis/ping")
 @measure_time
 def redis_ping(r :redis.Redis = Depends(get_redis)):
     r.ping()
+    return {"status": "ok", "timestamp": time.time()}
+
+@app.get("/cluster/ping")
+@measure_time
+def redis_cluster_ping(rc : RedisCluster = Depends(get_redis_cluster)):
+    rc.ping()
     return {"status": "ok", "timestamp": time.time()}
 
 @app.get("/count")
