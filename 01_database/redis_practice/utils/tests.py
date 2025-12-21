@@ -1,11 +1,16 @@
+import random
+import string
 import threading
 import time
-from typing import Any
+from typing import Any, List
 
 import requests
 
 BASE_URL = "http://127.0.0.1:8000"
 TIMEOUT = 600
+
+def get_random_users(size: int) -> List[str]:
+    return [f"user_{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}" for _ in range(size)]
 
 def call(
         name: str, 
