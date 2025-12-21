@@ -8,11 +8,13 @@ from utils.decorators import measure_time
 from infra.redis_client import get_redis
 from keys_vs_scan import QueryRouter
 from list_vs_zset import QueueRouter
+from string_vs_hset import TimeScaleRouter
 
 app = FastAPI()
 
 app.include_router(QueryRouter)
 app.include_router(QueueRouter)
+app.include_router(TimeScaleRouter)
 
 @app.get("/ping")
 @measure_time
@@ -20,9 +22,18 @@ def redis_ping(r :redis.Redis = Depends(get_redis)):
     r.ping()
     return {"status": "ok", "timestamp": time.time()}
 
+@app.get("/count")
+@measure_time
+def get_count(pattern: str, r: redis.Redis = Depends(get_redis)):
+    res = sum(1 for _ in r.scan_iter(match=pattern, count=1000))
+    return {
+        "status": "ok",
+        "count": res,
+    }
+
 @app.delete("/clear")
 @measure_time
-def redis_clear(r: redis.Redis = Depends(get_redis), pattern: str = "test:*"):
+def redis_clear(pattern: str = "test:*", r: redis.Redis = Depends(get_redis)):
     deleted = 0
     batch_size = 1000
     pipe = r.pipeline()
