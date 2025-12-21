@@ -37,7 +37,7 @@ def redis_stats(r: redis.Redis = Depends(get_redis)):
     return {
         "status": "ok",
         "scan_calls": stat.get("calls", 0),
-        "suec_total": stat.get("usec", 0),
+        "usec_total": stat.get("usec", 0),
         "usec_per_call": stat.get("usec_per_call", 0),
     }
 
@@ -65,7 +65,7 @@ def redis_cluster_stats(rc: RedisCluster = Depends(get_redis_cluster)):
             stat = {}
         res[f"{node.host}:{node.port}"] = {
             "scan_calls": stat.get("calls", 0),
-            "suec_total": stat.get("usec", 0),
+            "usec_total": stat.get("usec", 0),
             "usec_per_call": stat.get("usec_per_call", 0),
         }
     res["status"] = "ok"

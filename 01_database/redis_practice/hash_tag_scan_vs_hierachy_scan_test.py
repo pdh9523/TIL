@@ -24,17 +24,17 @@ search_with_hash-tag: 200, 1.026s, body={'status': 'ok', 'type': 'hash-tag', 'co
 get_cluster_stats: 200, 0.003s, body={
     'redis1:6379': {
         'scan_calls': 0, 
-        'suec_total': 0, 
+        'usec_total': 0, 
         'usec_per_call': 0
     }, 
     'redis2:6379': {
         'scan_calls': 3599, 
-        'suec_total': 720503, 
+        'usec_total': 720503, 
         'usec_per_call': 200.2
     }, 
     'redis3:6379': {
         'scan_calls': 0, 
-        'suec_total': 0, 
+        'usec_total': 0, 
         'usec_per_call': 0
     }, 'status': 'ok'}
 
@@ -44,17 +44,17 @@ search_with_hierachy: 200, 3.041s, body={'status': 'ok', 'type': 'hierachy', 'co
 get_cluster_stats: 200, 0.004s, body={
     'redis1:6379': {
         'scan_calls': 3330, 
-        'suec_total': 754741, 
+        'usec_total': 754741, 
         'usec_per_call': 226.65
     }, 
     'redis2:6379': {
         'scan_calls': 3330, 
-        'suec_total': 752414, 
+        'usec_total': 752414, 
         'usec_per_call': 225.95
     }, 
     'redis3:6379': {
         'scan_calls': 3337, 
-        'suec_total': 758213, 
+        'usec_total': 758213, 
         'usec_per_call': 227.21
     }, 'status': 'ok'}
     
