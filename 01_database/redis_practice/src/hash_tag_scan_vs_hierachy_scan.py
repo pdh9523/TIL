@@ -5,8 +5,8 @@ from typing import List
 from fastapi import APIRouter, Depends
 from redis.cluster import RedisCluster
 
-from utils.decorators import measure_time
-from infra.redis_cluster import get_redis_cluster
+from src.utils.decorators import measure_time
+from src.infra.redis_cluster import get_redis_cluster
 
 SearchRouter = APIRouter(prefix="/search")
 

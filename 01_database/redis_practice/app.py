@@ -6,13 +6,13 @@ import uvicorn
 from fastapi import FastAPI, Depends
 from redis.cluster import RedisCluster
 
-from utils.decorators import measure_time
-from infra.redis_client import get_redis
-from infra.redis_cluster import get_redis_cluster
-from keys_vs_scan import QueryRouter
-from list_vs_zset import QueueRouter
-from string_vs_hset import TimeScaleRouter
-from hash_tag_scan_vs_hierachy_scan import SearchRouter
+from src.utils.decorators import measure_time
+from src.infra.redis_client import get_redis
+from src.infra.redis_cluster import get_redis_cluster
+from src.keys_vs_scan import QueryRouter
+from src.list_vs_zset import QueueRouter
+from src.string_vs_hset import TimeScaleRouter
+from src.hash_tag_scan_vs_hierachy_scan import SearchRouter
 
 app = FastAPI()
 

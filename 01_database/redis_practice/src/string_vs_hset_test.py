@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from utils.tests import call, get_random_users
+from src.utils.tests import call, get_random_users
 
 
 target_user = [

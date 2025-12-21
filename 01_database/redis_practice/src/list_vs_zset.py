@@ -6,8 +6,8 @@ from typing import List
 import redis
 from fastapi import APIRouter, Body, Depends, HTTPException
 
-from infra.redis_client import get_redis
-from utils.decorators import measure_time
+from src.infra.redis_client import get_redis
+from src.utils.decorators import measure_time
 
 
 QueueRouter = APIRouter(prefix="/queue")

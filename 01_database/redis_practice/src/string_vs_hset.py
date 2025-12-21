@@ -4,8 +4,8 @@ from typing import List, Tuple
 
 from fastapi import APIRouter, Body, Depends
 
-from infra.redis_client import get_redis
-from utils.decorators import measure_time
+from src.infra.redis_client import get_redis
+from src.utils.decorators import measure_time
 
 TimeScaleRouter = APIRouter(prefix="/time-scale")
 

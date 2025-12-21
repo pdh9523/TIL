@@ -3,8 +3,8 @@ import time
 import redis
 from fastapi import APIRouter, Depends
 
-from utils.decorators import measure_time
-from infra.redis_client import get_redis
+from src.utils.decorators import measure_time
+from src.infra.redis_client import get_redis
 
 QueryRouter = APIRouter(prefix="/query")
 
