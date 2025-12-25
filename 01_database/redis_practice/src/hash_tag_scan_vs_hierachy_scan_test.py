@@ -1,4 +1,4 @@
-from src.utils.tests import call
+from utils.tests import call
 
 
 def test_hash_tag(struct_type: str):
