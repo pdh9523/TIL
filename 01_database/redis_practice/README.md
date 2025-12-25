@@ -6,6 +6,37 @@ Redis 는 단순한 Key-Value 스토리지에서 그치지 않고,
 실제 테스트를 기반으로,  
 자주 마주치는 선택 지점들을 중심으로, 자료구조의 특성과 트레이드오프를 정리하려고 한다.
 
+## 테스트 실행 방법
+### 실행 환경
+- Docker
+- Docker-compose
+- python 3.x
+### 컨테이너 실행
+```bash
+# 컨테이너 실행
+# 초기 실행 시 에러가 발생하면 한 번 더 실행
+docker-compose up -d
+```
+### 테스트 스크립트 실행
+아래 스크립트들은 각각 독립적으로 실행 가능하며,  
+Redis 자료구조별 성능 비교 테스트를 수행한다.
+``` bash
+# Hash Tag vs Hierarchy (Cluster 환경)
+python hash_tag_scan_vs_hierarchy_scan_test.py
+
+# KEYS vs SCAN
+python keys_vs_scan_test.py
+
+# List vs ZSet
+python list_vs_zset_test.py
+
+# String vs Hash (HSET)
+python string_vs_hset_test.py
+```
+
+필자가 직접 테스트한 결과는  
+해당 테스트 파일 하단에 주석으로 정리되어 있다.
+
 ## 레디스 자료구조의 종류
 
 Redis의 대표적인 자료구조는 다음과 같다.
