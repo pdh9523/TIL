@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func case1() {
+func case1A() {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("[main] recovered:", r)
@@ -27,7 +27,7 @@ func case1() {
 	fmt.Println("[main] finished")
 }
 
-func case1_4() {
+func case1B() {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("[main] recovered:", r)
