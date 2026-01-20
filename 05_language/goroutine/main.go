@@ -5,4 +5,5 @@ func main() {
 	//case1B()
 	//case2A()
 	//case2B()
+	appendix()
 }
