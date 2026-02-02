@@ -34,7 +34,7 @@ func (c *Cache) startSubscriber(ctx context.Context) {
 	}
 }
 
-func (c *Cache) publish(ctx context.Context, key string) error {
+func (c *Cache) Invalidate(ctx context.Context, key string) error {
 	msg := Message{
 		SenderID: c.id,
 		Key:      key,
