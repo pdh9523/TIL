@@ -33,3 +33,17 @@ func (c *Cache) startSubscriber(ctx context.Context) {
 		}
 	}
 }
+
+func (c *Cache) publish(ctx context.Context, key string) error {
+	msg := Message{
+		SenderID: c.id,
+		Key:      key,
+	}
+
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	return c.redis.Publish(ctx, c.channel, data).Err()
+}

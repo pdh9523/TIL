@@ -99,27 +99,24 @@ func (c *Cache) Get(key string) (any, bool) {
 
 // Set stores a value in the local cache and publishes an invalidation message
 // to other servers via Redis Pub/Sub.
-func (c *Cache) Set(key string, value any) error {
+func (c *Cache) Set(ctx context.Context, key string, value any) error {
 	c.local.SetWithTTL(key, value, 1, c.ttl)
 
-	// TODO: publish other servers
-	return nil
+	return c.publish(ctx, key)
 }
 
 // SetWithTTL stores a value in the local cache with expires and publishes an invalidation message
 // to other servers via Redis Pub/Sub.
-func (c *Cache) SetWithTTL(key string, value any, ttl time.Duration) error {
+func (c *Cache) SetWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error {
 	c.local.SetWithTTL(key, value, 1, ttl)
 
-	// TODO: publish other servers
-	return nil
+	return c.publish(ctx, key)
 }
 
 // Delete removes a value from the local cache and publishes an invalidation message
 // to other servers via Redis Pub/Sub.
-func (c *Cache) Delete(key string) error {
+func (c *Cache) Delete(ctx context.Context, key string) error {
 	c.local.Del(key)
 
-	// TODO: publish other servers
-	return nil
+	return c.publish(ctx, key)
 }
