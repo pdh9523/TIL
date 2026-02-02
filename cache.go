@@ -90,3 +90,27 @@ func New(cfg Config) (*Cache, error) {
 
 	return c, nil
 }
+
+// Get retrieves a value from the local cache.
+// If not exists, it returns (nil, false).
+func (c *Cache) Get(key string) (any, bool) {
+	return c.local.Get(key)
+}
+
+// Set stores a value int the local cache and publishes an invalidation message
+// to other servers via Redis Pub/Sub.
+func (c *Cache) Set(key string, value any) error {
+	c.local.SetWithTTL(key, value, 1, c.ttl)
+
+	// TODO: publish other servers
+	return nil
+}
+
+// Delete removes a value from the local cache and publishes an invalidation message
+// to other servers via Redis Pub/Sub.
+func (c *Cache) Delete(key string) error {
+	c.local.Del(key)
+
+	// TODO: publish other servers
+	return nil
+}
