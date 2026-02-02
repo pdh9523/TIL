@@ -1,4 +1,4 @@
-package cache_sync
+package cache
 
 import (
 	"context"
