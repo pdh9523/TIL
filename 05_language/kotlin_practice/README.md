@@ -23,3 +23,29 @@ fun main() {
 **`Main.kt` 파일명을 강제하는 것은 아니다.**
 
 ---
+## 불변 변수와 가변 변수
+
+```kotlin
+fun main() {
+    val popcorn = 5
+    popcorn = 8 // IMPOSSIBLE
+
+    var customers = 10
+    customers = 8 // POSSIBLE
+}
+
+val tickets = 10
+```
+
+읽기 전용의, 불변 변수를 선언하려면 `val`을,  
+수정 가능한, 가변 변수를 선언하려면 `var`을 통해 선언한다. 
+
+`customer`의 경우 `var` 키워드로 선언 후,  
+바로 아래줄에서 재할당되었다.  
+
+**Kotlin**에서는 기본적으로 `val` 키워드로 선언하고,  
+재할당이 꼭 필요한 경우에만 `var`을 사용하는 것을 권장한다. 
+
+해당 변수들은 `main()`함수 바깥에서도 선언이 가능하다.
+
+---
