@@ -1,8 +1,6 @@
 fun main() {
-    val popcorn = 5
-    // popcorn = 8 // IMPOSSIBLE
+    val customers = 10
 
-    var customers = 10
-    customers = 8
+    println("Customers: $customers")
+    println("Customers+1: ${customers+1}")
 }
-val tickets = 10

@@ -49,3 +49,17 @@ val tickets = 10
 해당 변수들은 `main()`함수 바깥에서도 선언이 가능하다.
 
 ---
+## 문자열 템플릿
+
+```kotlin
+fun main() {
+    val customers = 10
+    
+    println("Customers: $customers")
+    println("Customers+1: ${customers+1}")
+}
+```
+문자열 템플릿 기능은 표준 출력을 할 때 용이하다.
+
+변수 앞에 `$`를 앞에 붙이는 것으로 출력할 문자열 내에 변수를 넣어 함께 출력할 수 있다.
+
